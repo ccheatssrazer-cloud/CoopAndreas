@@ -22,28 +22,36 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/DK22Pac/plugin-sdk.git github_plugin_sdk
           mkdir -p github_plugin_sdk/output/lib
+          # ВАЖНО: Если упадет на этапе линковки (LNK1104), 
+          # значит в github_plugin_sdk/output/lib не хватает plugin.lib
 
-      - name: Build Projects
+      - name: Build Server and Proxy
+        shell: bash
+        run: |
+          # Сборка без лишних флагов, чтобы enet (C) не ругался
+          xmake f -a x86 -m release -y
+          xmake build server
+          xmake build proxy
+
+      - name: Build Client (SA)
         shell: bash
         run: |
           export PLUGIN_SDK_DIR="$(pwd)/github_plugin_sdk"
           
-          # 1. Чистая конфигурация под x86
-          xmake f -a x86 -m release -y
+          # Полная очистка предыдущего конфига
+          xmake c -a
           
-          # 2. Сборка того, что уже работает
-          xmake build server
-          xmake build proxy
+          # Конфиг специально для Клиента с лечением injector.hpp
+          # Добавляем принудительные инклуды стандартных библиотек
+          xmake f -a x86 -m release -y \
+            --cxflags="/permissive- /FI type_traits /FI algorithm /FI functional /FI utility"
           
-          # 3. Сборка клиента с "лекарством" через переменную окружения
-          # Это заставит компилятор проглотить старый код SDK
-          export XMAKE_CXFLAGS="/permissive- /FI type_traits /FI algorithm"
-          xmake build -y client
+          xmake build client
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: CoopAndreas-Full-Package
+          name: CoopAndreas-Binaries
           path: |
             build/windows/x86/release/server.exe
             build/windows/x86/release/proxy.dll
