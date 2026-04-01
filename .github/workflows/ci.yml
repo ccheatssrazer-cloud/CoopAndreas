@@ -28,16 +28,17 @@ jobs:
         run: |
           export PLUGIN_SDK_DIR="$(pwd)/github_plugin_sdk"
           
-          # 1. Базовая конфигурация под x86 (GTA SA)
+          # 1. Чистая конфигурация под x86
           xmake f -a x86 -m release -y
           
-          # 2. Собираем сервер и прокси БЕЗ костылей (чтобы enet не падал)
+          # 2. Сборка того, что уже работает
           xmake build server
           xmake build proxy
           
-          # 3. Собираем КЛИЕНТ с принудительным лечением injector.hpp
-          # Добавляем флаги ТОЛЬКО для этой цели
-          xmake build -y --cxflags="/permissive- /FI type_traits /FI algorithm" client
+          # 3. Сборка клиента с "лекарством" через переменную окружения
+          # Это заставит компилятор проглотить старый код SDK
+          export XMAKE_CXFLAGS="/permissive- /FI type_traits /FI algorithm"
+          xmake build -y client
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
