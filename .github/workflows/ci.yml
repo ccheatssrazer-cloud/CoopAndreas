@@ -21,20 +21,17 @@ jobs:
         with:
           xmake-version: latest
 
-      - name: Build server
-        run: xmake build server
+      - name: Configure and Build
+        run: |
+          # Конфигурируем проект под x86 (как в вашем xmake.lua)
+          # Устанавливаем общую директорию для бинарников в 'dist'
+          xmake f -a x86 -m release -o dist
+          xmake build server
+          xmake build proxy
         
-      - name: Build proxy
-        run: xmake build proxy
-
-      - name: Upload server artifacts
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: server-build
-          path: build/server/**/*
-
-      - name: Upload proxy artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: proxy-build
-          path: build/proxy/**/*
+          name: CoopAndreas-Build
+          # Теперь все скомпилированные файлы (exe, dll) будут лежать здесь
+          path: dist/windows/x86/release/*
