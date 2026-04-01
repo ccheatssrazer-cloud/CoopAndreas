@@ -21,11 +21,20 @@ jobs:
         with:
           xmake-version: latest
 
-      - name: Build all targets
-        run: xmake build
+      - name: Build server
+        run: xmake build server
+        
+      - name: Build proxy
+        run: xmake build proxy
 
-      - name: Upload all build files
+      - name: Upload server artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
-          path: build/**/*
+          name: server-build
+          path: build/server/**/*
+
+      - name: Upload proxy artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: proxy-build
+          path: build/proxy/**/*
