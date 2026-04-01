@@ -16,32 +16,34 @@ jobs:
 
       - name: Install Xmake
         uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
 
       - name: Setup Plugin-SDK
         shell: bash
         run: |
-          # Клонируем только заголовки и структуру
+          # Клонируем SDK
           git clone --depth 1 https://github.com/DK22Pac/plugin-sdk.git github_plugin_sdk
-          
-          # Создаем структуру папок, которую ждет твой xmake.lua
+          # Создаем структуру, чтобы линковка не упала сразу
           mkdir -p github_plugin_sdk/output/lib
-          
-          # ПРИМЕЧАНИЕ: Если у тебя есть свои либы plugin.lib/plugin_d.lib, 
-          # их нужно положить в репозиторий или качать сюда.
-          # Без .lib файлов линковка client (SA) выдаст ошибку LNK1104.
+          # ВАЖНО: Если билд упадет на линковке (LNK1104), тебе придется залить 
+          # файл plugin.lib в свой репозиторий и подложить его сюда.
 
       - name: Build
         shell: bash
         run: |
           export PLUGIN_SDK_DIR=$(pwd)/github_plugin_sdk
           
-          # Принудительно ставим x86, так как GTA SA — 32-битная
-          xmake f -a x86 -m release -y
+          # Настройка билда:
+          # 1. -a x86: Обязательно для GTA SA
+          # 2. --cxflags: Добавляем /permissive- (лояльность к старому коду) 
+          #    и /FI"type_traits" (принудительно лечит ошибку injector.hpp)
+          xmake f -a x86 -m release -y \
+            --cxflags="/permissive- /FI\"type_traits\" /FI\"algorithm\""
           
-          # Сборка по целям
           xmake build server
           xmake build proxy
-          xmake build client || echo "Client build failed - check plugin.lib"
+          xmake build client
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -52,3 +54,4 @@ jobs:
             build/windows/x86/release/proxy.dll
             build/windows/x86/release/CoopAndreasSA.dll
           if-no-files-found: warn
+          
