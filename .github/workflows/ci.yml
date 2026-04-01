@@ -16,30 +16,23 @@ jobs:
 
       - name: Install Xmake
         uses: xmake-io/github-action-setup-xmake@v1
-        with:
-          xmake-version: latest
 
       - name: Setup Plugin-SDK
         shell: bash
         run: |
-          # Клонируем SDK
           git clone --depth 1 https://github.com/DK22Pac/plugin-sdk.git github_plugin_sdk
-          # Создаем структуру, чтобы линковка не упала сразу
           mkdir -p github_plugin_sdk/output/lib
-          # ВАЖНО: Если билд упадет на линковке (LNK1104), тебе придется залить 
-          # файл plugin.lib в свой репозиторий и подложить его сюда.
 
       - name: Build
         shell: bash
         run: |
-          export PLUGIN_SDK_DIR=$(pwd)/github_plugin_sdk
+          export PLUGIN_SDK_DIR="$(pwd)/github_plugin_sdk"
           
-          # Настройка билда:
-          # 1. -a x86: Обязательно для GTA SA
-          # 2. --cxflags: Добавляем /permissive- (лояльность к старому коду) 
-          #    и /FI"type_traits" (принудительно лечит ошибку injector.hpp)
+          # Конфигурируем проект
+          # --cxflags: только для C++ (лечит injector.hpp)
+          # --cflags: для C (не трогаем enet)
           xmake f -a x86 -m release -y \
-            --cxflags="/permissive- /FI\"type_traits\" /FI\"algorithm\""
+            --cxflags="/permissive- /FI type_traits /FI algorithm"
           
           xmake build server
           xmake build proxy
@@ -54,4 +47,3 @@ jobs:
             build/windows/x86/release/proxy.dll
             build/windows/x86/release/CoopAndreasSA.dll
           if-no-files-found: warn
-          
