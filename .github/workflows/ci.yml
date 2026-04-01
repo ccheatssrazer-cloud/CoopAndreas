@@ -23,27 +23,28 @@ jobs:
           git clone --depth 1 https://github.com/DK22Pac/plugin-sdk.git github_plugin_sdk
           mkdir -p github_plugin_sdk/output/lib
 
-      - name: Build
+      - name: Build Projects
         shell: bash
         run: |
           export PLUGIN_SDK_DIR="$(pwd)/github_plugin_sdk"
           
-          # Конфигурируем проект
-          # --cxflags: только для C++ (лечит injector.hpp)
-          # --cflags: для C (не трогаем enet)
-          xmake f -a x86 -m release -y \
-            --cxflags="/permissive- /FI type_traits /FI algorithm"
+          # 1. Базовая конфигурация под x86 (GTA SA)
+          xmake f -a x86 -m release -y
           
+          # 2. Собираем сервер и прокси БЕЗ костылей (чтобы enet не падал)
           xmake build server
           xmake build proxy
-          xmake build client
+          
+          # 3. Собираем КЛИЕНТ с принудительным лечением injector.hpp
+          # Добавляем флаги ТОЛЬКО для этой цели
+          xmake build -y --cxflags="/permissive- /FI type_traits /FI algorithm" client
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: CoopAndreas-Binaries
+          name: CoopAndreas-Full-Package
           path: |
             build/windows/x86/release/server.exe
             build/windows/x86/release/proxy.dll
             build/windows/x86/release/CoopAndreasSA.dll
-          if-no-files-found: warn
+          if-no-files-found: error
