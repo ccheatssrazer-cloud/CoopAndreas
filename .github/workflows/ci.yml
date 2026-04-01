@@ -1,12 +1,10 @@
-name: Build on Windows
+name: Build CoopAndreas
 
 on:
   push:
-    branches:
-      - '**'
+    branches: [ "**" ]
   pull_request:
-    branches:
-      - '**'
+    branches: [ "**" ]
   workflow_dispatch:
 
 jobs:
@@ -14,24 +12,38 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install Xmake
         uses: xmake-io/github-action-setup-xmake@v1
         with:
           xmake-version: latest
 
-      - name: Configure and Build
+      - name: Setup Dependencies
         run: |
-          # Конфигурируем проект под x86 (как в вашем xmake.lua)
-          # Устанавливаем общую директорию для бинарников в 'dist'
-          xmake f -a x86 -m release -o dist
+          git clone --depth 1 https://github.com/DK22Pac/plugin-sdk.git github_plugin_sdk
+        shell: bash
+
+      - name: Build
+        run: |
+          # Установка путей для xmake.lua
+          export PLUGIN_SDK_DIR=$(pwd)/github_plugin_sdk
+          
+          # Конфигурация и сборка
+          xmake f -a x86 -m release -y
+          xmake build client
           xmake build server
           xmake build proxy
-        
+        shell: bash
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: CoopAndreas-Build
-          # Теперь все скомпилированные файлы (exe, dll) будут лежать здесь
-          path: dist/windows/x86/release/*
+          name: CoopAndreas-Binaries
+          path: |
+            build/windows/x86/release/CoopAndreasSA.dll
+            build/windows/x86/release/server.exe
+            build/windows/x86/release/proxy.dll
+          if-no-files-found: error
